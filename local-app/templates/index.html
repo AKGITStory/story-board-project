@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sound &amp; Image Notes</title>
+<style>
+:root {
+  --bg: #f3f5f4; --surface: #fff; --fg: #1b2422; --muted: #5b6965; --line: #d5ddda;
+  --accent: #0f766e; --accent-ink: #fff; --accent-soft: #e0f0ed; --danger: #b4232a;
+  --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --serif: Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #121817; --surface: #1a2220; --fg: #e4ebe8; --muted: #93a39e; --line: #2d3936;
+          --accent: #3cc4b4; --accent-ink: #0b1514; --accent-soft: #173431; --danger: #f17a7f; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 var(--serif); padding: 32px 16px 64px; }
+.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; }
+h1 { font: 700 36px/1.1 var(--sans); margin: 0 0 8px; }
+header p, .note { color: var(--muted); margin: 0; }
+.note { font-size: 13px; }
+.step { display: flex; flex-direction: column; gap: 14px; }
+.step-label { font: 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h2 { font: 500 22px var(--sans); margin: 0; }
+.uploads { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.panel-head h3 { font: 700 17px var(--sans); margin: 0; }
+.status { font: 12px var(--mono); color: var(--muted); }
+.status.ok { color: var(--accent); } .status.err { color: var(--danger); }
+.drop { position: relative; border: 1.5px dashed var(--line); border-radius: 8px; padding: 20px 14px; text-align: center; color: var(--muted); cursor: pointer; }
+.drop:hover, .drop.over, .drop:focus-within { border-color: var(--accent); background: var(--accent-soft); }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.drop strong { display: block; color: var(--fg); font: 500 15px var(--sans); }
+.preview img { display: block; max-width: 100%; max-height: 180px; margin: 0 auto; border-radius: 6px; }
+.preview audio { width: 100%; }
+label { font: 12px var(--mono); color: var(--muted); }
+select, textarea, input[type=text] { width: 100%; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+textarea { min-height: 140px; resize: vertical; font-size: 15px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+button { font: 500 15px var(--sans); border-radius: 8px; padding: 10px 18px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); }
+button.ghost { background: transparent; color: var(--accent); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.ask { background: var(--surface); border: 1px solid var(--accent); border-radius: 10px; padding: 18px; }
+.ask h2 { color: var(--accent); }
+.result { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+.result h2 { font: 700 28px var(--sans); }
+.result h3 { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.result p { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 65ch; margin: 0; }
+.spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Sound &amp; Image Notes</h1>
+    <p>Upload a sound recording and an image. Both are turned into text on this computer, then you give it a heading.</p>
+  </header>
+
+  <section class="step">
+    <span class="step-label">Step 1 of 3</span>
+    <h2>Upload your files</h2>
+    <div class="uploads">
+      <div class="panel">
+        <div class="panel-head"><h3>Sound</h3><span class="status" id="audioStatus">No file yet</span></div>
+        <label for="audioLang">Spoken language</label>
+        <select id="audioLang">
+          <option value="">Detect automatically</option>
+          <option value="en">English</option>
+          <option value="mr">Marathi</option>
+          <option value="hi">Hindi</option>
+        </select>
+        <div class="drop" id="audioDrop">
+          <input type="file" id="audioFile" accept="audio/*,video/*" aria-label="Upload a sound file">
+          <strong>Choose or drop a sound file</strong><small>MP3, M4A, WAV, OGG</small>
+        </div>
+        <div class="preview" id="audioPreview" hidden></div>
+        <label for="audioText">Sound as text</label>
+        <textarea id="audioText" placeholder="The transcript appears here. You can edit it."></textarea>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Image</h3><span class="status" id="imageStatus">No file yet</span></div>
+        <label for="imageLang">Text language in image</label>
+        <select id="imageLang">
+          <option value="eng">English</option>
+          <option value="mar">Marathi</option>
+          <option value="hin">Hindi</option>
+          <option value="eng+mar">English + Marathi</option>
+        </select>
+        <div class="drop" id="imageDrop">
+          <input type="file" id="imageFile" accept="image/*" aria-label="Upload an image">
+          <strong>Choose or drop an image</strong><small>JPG, PNG, WEBP, TIFF</small>
+        </div>
+        <div class="preview" id="imagePreview" hidden></div>
+        <label for="imageText">Image as text</label>
+        <textarea id="imageText" placeholder="The text read from your image appears here. You can edit it."></textarea>
+      </div>
+    </div>
+    <div class="row"><button id="continueBtn" disabled>Continue</button></div>
+  </section>
+
+  <section class="step ask" id="askStep" hidden>
+    <span class="step-label">Step 2 of 3</span>
+    <h2>What is this text about?</h2>
+    <p class="note">Your answer becomes the heading for the text.</p>
+    <input type="text" id="headerInput" placeholder="e.g. Team meeting, 14 October — whiteboard notes" autocomplete="off">
+    <div class="row"><button id="headerBtn" disabled>Add heading</button></div>
+  </section>
+
+  <section class="step" id="resultStep" hidden>
+    <span class="step-label">Step 3 of 3</span>
+    <div class="result" id="result"></div>
+    <div class="row">
+      <button id="copyBtn">Copy text</button>
+      <button class="ghost" id="saveBtn">Save as .txt</button>
+      <button class="ghost" id="resetBtn">Start over</button>
+      <span class="status ok" id="toast" aria-live="polite"></span>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const audioText = $("audioText"), imageText = $("imageText");
+
+function setStatus(el, html, kind) { el.className = "status" + (kind ? " " + kind : ""); el.innerHTML = html; }
+
+function wireDrop(dropId, inputId, onFile) {
+  const drop = $(dropId), input = $(inputId);
+  input.addEventListener("change", () => input.files[0] && onFile(input.files[0]));
+  ["dragenter", "dragover"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(e => drop.addEventListener(e, () => drop.classList.remove("over")));
+  drop.addEventListener("drop", ev => { ev.preventDefault(); const f = ev.dataTransfer.files[0]; if (f) onFile(f); });
+}
+
+async function convert(url, file, extra, statusEl, textarea, busyMsg) {
+  setStatus(statusEl, '<span class="spinner"></span>' + busyMsg);
+  const fd = new FormData(); fd.append("file", file);
+  for (const [k, v] of Object.entries(extra)) fd.append(k, v);
+  try {
+    const res = await fetch(url, { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Something went wrong.");
+    textarea.value = data.text || "";
+    setStatus(statusEl, data.text ? "Done" : "No text found", data.text ? "ok" : "err");
+  } catch (e) {
+    setStatus(statusEl, e.message, "err");
+  }
+  refresh();
+}
+
+wireDrop("audioDrop", "audioFile", file => {
+  const p = $("audioPreview"); p.innerHTML = "";
+  const a = document.createElement("audio"); a.controls = true; a.src = URL.createObjectURL(file);
+  p.append(a); p.hidden = false;
+  convert("/api/audio", file, { language: $("audioLang").value }, $("audioStatus"), audioText,
+          "Transcribing… (the first run downloads the speech model)");
+});
+
+wireDrop("imageDrop", "imageFile", file => {
+  const p = $("imagePreview"); p.innerHTML = "";
+  const im = document.createElement("img"); im.alt = "Uploaded image"; im.src = URL.createObjectURL(file);
+  p.append(im); p.hidden = false;
+  convert("/api/image", file, { lang: $("imageLang").value }, $("imageStatus"), imageText, "Reading text…");
+});
+
+function refresh() { $("continueBtn").disabled = !(audioText.value.trim() || imageText.value.trim()); }
+audioText.addEventListener("input", refresh);
+imageText.addEventListener("input", refresh);
+
+$("continueBtn").addEventListener("click", () => { $("askStep").hidden = false; $("headerInput").focus(); });
+$("headerInput").addEventListener("input", e => $("headerBtn").disabled = !e.target.value.trim());
+$("headerInput").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.value.trim()) $("headerBtn").click(); });
+
+function payload() { return { header: $("headerInput").value.trim(), audio: audioText.value, image: imageText.value }; }
+
+$("headerBtn").addEventListener("click", () => {
+  const r = $("result"); r.innerHTML = "";
+  const h = document.createElement("h2"); h.textContent = $("headerInput").value.trim(); r.append(h);
+  [["From the sound", audioText.value], ["From the image", imageText.value]].forEach(([label, txt]) => {
+    if (!txt.trim()) return;
+    const sec = document.createElement("div");
+    const l = document.createElement("h3"); l.textContent = label;
+    const b = document.createElement("p"); b.textContent = txt.trim();
+    sec.append(l, b); r.append(sec);
+  });
+  $("resultStep").hidden = false;
+  $("resultStep").scrollIntoView({ behavior: "smooth" });
+});
+
+function toast(t) { $("toast").textContent = t; setTimeout(() => $("toast").textContent = "", 2500); }
+
+$("copyBtn").addEventListener("click", () => navigator.clipboard.writeText($("result").innerText).then(() => toast("Copied")));
+
+$("saveBtn").addEventListener("click", async () => {
+  const res = await fetch("/api/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload()) });
+  const name = (res.headers.get("Content-Disposition") || "").match(/filename="(.+)"/)?.[1] || "notes.txt";
+  const a = document.createElement("a"); a.href = URL.createObjectURL(await res.blob()); a.download = name; a.click();
+  toast("Saved " + name);
+});
+
+$("resetBtn").addEventListener("click", () => location.reload());
+</script>
+</body>
+</html>

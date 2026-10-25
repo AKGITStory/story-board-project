@@ -1,0 +1,351 @@
+<title>Story Priority Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Hind:wght@400;500;600&display=swap">
+<style>
+/* Layout: step tabs on top (Task, Load text files, Set priorities); Task = sound + image to text with a heading; sort = unsorted tray then three priority lanes. */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --fg:#1b2233; --muted:#5d6779; --line:#d9dee8;
+  --high:#c8322f; --high-bg:#fbe9e8;
+  --med:#b7710a; --med-bg:#fbf0dc;
+  --low:#1f7a8c; --low-bg:#e1f1f4;
+  --accent:#2b3a67; --accent-bg:#e6eaf5;
+  --display:'Bricolage Grotesque','Noto Sans Devanagari',system-ui,sans-serif;
+  --body:'Hind','Noto Sans Devanagari',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121724; --surface:#1b2233; --fg:#e8ecf5; --muted:#9aa5ba; --line:#2f3850;
+  --high:#ff7b76; --high-bg:#3a1f23; --med:#f0b455; --med-bg:#392b14; --low:#5cc3d6; --low-bg:#14333b; --accent:#9db2f5; --accent-bg:#232d4a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121724; --surface:#1b2233; --fg:#e8ecf5; --muted:#9aa5ba; --line:#2f3850;
+  --high:#ff7b76; --high-bg:#3a1f23; --med:#f0b455; --med-bg:#392b14; --low:#5cc3d6; --low-bg:#14333b; --accent:#9db2f5; --accent-bg:#232d4a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.7rem,5vw,2.4rem);margin:0;letter-spacing:-.02em;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--line)}
+.bar i{display:block;transition:width .3s}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.9rem;color:var(--muted);margin-top:8px}
+.legend b{color:var(--fg);font-variant-numeric:tabular-nums}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button,.btn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:9px 14px;cursor:pointer;min-height:44px}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,.btn:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.btn input{display:none}
+label.chk{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:.92rem}
+textarea{width:100%;min-height:70px;font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;resize:vertical}
+h2{font-family:var(--display);font-size:1.1rem;margin:0;display:flex;justify-content:space-between;align-items:center;gap:8px}
+h2 span.n{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600}
+.tray{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
+.lanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media(max-width:820px){.lanes{grid-template-columns:1fr}}
+.lane{border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0;border:1px solid var(--line)}
+.lane.high{background:var(--high-bg)} .lane.med{background:var(--med-bg)} .lane.low{background:var(--low-bg)}
+.lane.high h2{color:var(--high)} .lane.med h2{color:var(--med)} .lane.low h2{color:var(--low)}
+.cards{display:flex;flex-direction:column;gap:8px;min-height:56px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card .t{font-weight:600;overflow-wrap:anywhere}
+.card .f{font-size:.8rem;color:var(--muted);overflow-wrap:anywhere}
+.card details{font-size:.88rem;color:var(--muted)}
+.card details summary{cursor:pointer}
+.card details p{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0 0;color:var(--fg);max-height:200px;overflow:auto}
+.pick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pick button{padding:6px 4px;font-size:.88rem}
+.pick .h{color:var(--high);border-color:var(--high)} .pick .m{color:var(--med);border-color:var(--med)} .pick .l{color:var(--low);border-color:var(--low)}
+.mini{display:flex;gap:6px;flex-wrap:wrap}
+.mini button{padding:4px 10px;font-size:.85rem;min-height:36px}
+.empty{color:var(--muted);font-size:.92rem;padding:8px 2px}
+.hint{font-size:.9rem;color:var(--muted)}
+.steps{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.steps button{border-radius:999px}
+.steps button[aria-current="step"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+body:not([data-v="task"]) [data-view="task"],body:not([data-v="upload"]) [data-view="upload"],body:not([data-v="sort"]) [data-view="sort"]{display:none!important}
+
+/* Task screen */
+.uploads{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.phead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.status{font-size:.82rem;color:var(--muted)}
+.status.ok{color:var(--low)} .status.err{color:var(--high)}
+.drop{position:relative;border:1.5px dashed var(--line);border-radius:8px;padding:18px 12px;text-align:center;color:var(--muted);cursor:pointer}
+.drop:hover,.drop.over,.drop:focus-within{border-color:var(--accent);background:var(--accent-bg)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.drop strong{display:block;color:var(--fg);font-family:var(--display);font-weight:600}
+.drop small{font-size:.8rem}
+.preview img{display:block;max-height:180px;margin:0 auto;border-radius:6px}
+.preview audio{width:100%}
+.fname{font-size:.8rem;color:var(--muted);overflow-wrap:anywhere}
+.tk-text{min-height:130px}
+.ask{border-color:var(--accent)}
+.ask h2{color:var(--accent);font-size:1.3rem}
+input[type=text]{width:100%;font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;min-height:44px}
+.result h2.doc{font-size:1.6rem;display:block;text-wrap:balance}
+.result h3{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 4px;font-weight:600}
+.result .body{white-space:pre-wrap;overflow-wrap:anywhere;max-width:65ch;margin:0}
+.spinner{display:inline-block;width:10px;height:10px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-right:6px;vertical-align:-1px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.spinner{animation:none}.bar i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Story Priority Board</h1>
+    <p class="sub" id="sub"></p>
+    <div class="steps"><button id="t-task" type="button">1 · Task</button><button id="t-upload" type="button">2 · Load text files</button><button id="t-sort" type="button">3 · Set priorities</button></div>
+  </header>
+
+  <!-- Task: sound + image to text, then a heading -->
+  <section class="panel" data-view="task">
+    <h2>Upload your files</h2>
+    <div class="uploads">
+      <div class="panel">
+        <div class="phead"><h2>Sound</h2><span class="status" id="tk-astatus">No file yet</span></div>
+        <div class="drop" id="tk-adrop">
+          <input type="file" id="tk-afile" accept="audio/*" aria-label="Upload a sound file">
+          <strong>Choose or drop a sound file</strong><small>MP3, M4A, WAV</small>
+        </div>
+        <div class="preview" id="tk-aprev" hidden></div>
+        <label class="hint" for="tk-atext">Sound as text</label>
+        <textarea class="tk-text" id="tk-atext" placeholder="Paste the transcript of the recording here."></textarea>
+        <p class="hint">This page plays your recording but can't transcribe it. On iPhone, open the memo in Voice Memos, tap ⋯ → View Transcript, copy it and paste it here.</p>
+      </div>
+      <div class="panel">
+        <div class="phead"><h2>Image</h2><span class="status" id="tk-istatus">No file yet</span></div>
+        <div class="drop" id="tk-idrop">
+          <input type="file" id="tk-ifile" accept="image/*" aria-label="Upload an image">
+          <strong>Choose or drop an image</strong><small>JPG, PNG, WEBP</small>
+        </div>
+        <div class="preview" id="tk-iprev" hidden></div>
+        <label class="hint" for="tk-itext">Image as text</label>
+        <textarea class="tk-text" id="tk-itext" placeholder="The text read from your image appears here. You can edit it."></textarea>
+        <p class="hint">Claude reads the text in the image. You'll be asked once to allow it.</p>
+      </div>
+    </div>
+    <div class="row"><button class="primary" id="tk-continue" type="button" disabled>Continue</button><span class="hint" id="tk-chint">Add text from the sound or the image to continue.</span></div>
+  </section>
+
+  <section class="panel ask" data-view="task" id="tk-ask" hidden>
+    <h2>What is this text about?</h2>
+    <p class="hint">Your answer becomes the heading. It's also the task's title on the board.</p>
+    <input type="text" id="tk-header" placeholder="e.g. Rehearsal notes, scene 3" autocomplete="off">
+    <div class="row"><button class="primary" id="tk-headbtn" type="button" disabled>Add heading</button></div>
+  </section>
+
+  <section class="panel result" data-view="task" id="tk-result" hidden>
+    <div id="tk-doc"></div>
+    <div class="row">
+      <button class="primary" id="tk-toboard" type="button">Add to board and set priority →</button>
+      <button id="tk-copy" type="button">Copy text</button>
+      <button id="tk-save" type="button" hidden>Save as .txt</button>
+      <button id="tk-reset" type="button">Start a new task</button>
+      <span class="hint" id="tk-toast" role="status"></span>
+    </div>
+  </section>
+
+  <section class="panel" data-view="sort" aria-label="Progress">
+    <div class="row"><button class="gotask" type="button">← Back to Task</button><button class="goup" type="button">Load text files</button></div>
+    <div class="bar" id="bar" role="img" aria-label="Priority progress"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="panel" data-view="upload">
+    <div class="row">
+      <label class="btn primary" for="files">Choose text files<input id="files" type="file" accept=".txt,.md,text/plain" multiple></label>
+      <label class="chk" for="firstline"><input id="firstline" type="checkbox" checked> Use the first line of each file as the title</label>
+    </div>
+    <p class="hint">Files saved from the Task screen start with their heading, so the heading becomes the title.</p>
+    <p class="hint">Or paste copied text below, then press Add.</p>
+    <textarea id="paste" placeholder="Title one&#10;Title two"></textarea>
+    <label class="chk" for="onetask"><input id="onetask" type="checkbox"> This is one task's copied text (first line is the heading)</label>
+    <div class="row"><button id="addpaste">Add</button><button id="clear">Clear board</button></div>
+    <div class="row"><button type="button" class="gotask">← Back to Task</button><button class="primary" id="gosort" type="button">Set priorities →</button><span class="hint" id="loaded"></span></div>
+  </section>
+
+  <section class="panel" data-view="sort">
+    <h2>Needs a priority <span class="n" id="n-un">0</span></h2>
+    <div class="tray" id="tray"></div>
+  </section>
+
+  <div class="lanes" data-view="sort">
+    <section class="lane high"><h2>High <span class="n" id="n-h">0</span></h2><div class="cards" id="l-h"></div></section>
+    <section class="lane med"><h2>Medium <span class="n" id="n-m">0</span></h2><div class="cards" id="l-m"></div></section>
+    <section class="lane low"><h2>Low <span class="n" id="n-l">0</span></h2><div class="cards" id="l-l"></div></section>
+  </div>
+
+  <section class="panel" data-view="sort">
+    <h2>Take it to a spreadsheet</h2>
+    <p class="hint">Copy, then paste into Excel or Google Sheets. Columns: Rank, Priority, Title, File.</p>
+    <div class="row"><button class="primary" id="copy">Copy as table</button><button class="gotask" type="button">← Back to Task</button><span class="hint" id="copied" role="status"></span></div>
+    <textarea id="csv" readonly hidden></textarea>
+  </section>
+</div>
+
+<script>
+var KEY='story-priority-board-v1', items=[], uid=0;
+var ORDER={h:'High',m:'Medium',l:'Low'};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
+function load(){try{var s=localStorage.getItem(KEY);if(s){items=JSON.parse(s)||[];items.forEach(function(i){uid=Math.max(uid,i.id)})}}catch(e){}}
+function add(title,file,text){title=(title||'').trim();if(!title)return null;var it={id:++uid,title:title,file:file||'',p:''};if(text)it.text=text;items.push(it);return it}
+function $(id){return document.getElementById(id)}
+function card(it,inTray){
+  var d=document.createElement('div');d.className='card';
+  var t=document.createElement('div');t.className='t';t.textContent=it.title;d.appendChild(t);
+  if(it.file&&it.file!==it.title){var f=document.createElement('div');f.className='f';f.textContent=it.file;d.appendChild(f)}
+  if(it.text){var dt=document.createElement('details'),sm=document.createElement('summary'),tp=document.createElement('p');
+    sm.textContent='Show text';tp.textContent=it.text;dt.appendChild(sm);dt.appendChild(tp);d.appendChild(dt)}
+  if(inTray){
+    var p=document.createElement('div');p.className='pick';
+    [['h','High'],['m','Medium'],['l','Low']].forEach(function(x){
+      var b=document.createElement('button');b.className=x[0];b.textContent=x[1];
+      b.setAttribute('aria-label',x[1]+' priority for '+it.title);
+      b.onclick=function(){setP(it.id,x[0])};p.appendChild(b)});
+    d.appendChild(p);
+  }else{
+    var m=document.createElement('div');m.className='mini';
+    [['▲','Move up',-1],['▼','Move down',1]].forEach(function(x){
+      var b=document.createElement('button');b.textContent=x[0];b.setAttribute('aria-label',x[1]);b.onclick=function(){nudge(it.id,x[2])};m.appendChild(b)});
+    var o=document.createElement('button');o.textContent='Change';o.onclick=function(){setP(it.id,'')};m.appendChild(o);
+    d.appendChild(m);
+  }
+  return d;
+}
+function setP(id,p){items.forEach(function(i){if(i.id===id){i.p=p;}});
+  if(p){var it=items.filter(function(i){return i.id===id})[0];items=items.filter(function(i){return i.id!==id});items.push(it)}
+  save();render()}
+function nudge(id,dir){
+  var idx=items.findIndex(function(i){return i.id===id}),p=items[idx].p,j=idx+dir;
+  while(j>=0&&j<items.length&&items[j].p!==p)j+=dir;
+  if(j<0||j>=items.length)return;
+  var tmp=items[idx];items[idx]=items[j];items[j]=tmp;save();render()}
+function fill(el,list,inTray,msg){el.innerHTML='';
+  if(!list.length){var e=document.createElement('div');e.className='empty';e.textContent=msg;el.appendChild(e);return}
+  list.forEach(function(it){el.appendChild(card(it,inTray))})}
+function render(){
+  var un=items.filter(function(i){return !i.p}),g={h:[],m:[],l:[]};
+  items.forEach(function(i){if(i.p)g[i.p].push(i)});
+  fill($('tray'),un,true,items.length?'Every title has a priority.':'No titles yet. Create a task, or load your text files.');
+  fill($('l-h'),g.h,false,'Nothing here yet');fill($('l-m'),g.m,false,'Nothing here yet');fill($('l-l'),g.l,false,'Nothing here yet');
+  $('n-un').textContent=un.length;$('n-h').textContent=g.h.length;$('n-m').textContent=g.m.length;$('n-l').textContent=g.l.length;
+  var tot=items.length||1;
+  $('bar').innerHTML=['h','m','l'].map(function(k){return '<i style="width:'+(g[k].length/tot*100)+'%;background:var(--'+(k==='h'?'high':k==='m'?'med':'low')+')"></i>'}).join('');
+  $('legend').innerHTML=[['high','High',g.h.length],['med','Medium',g.m.length],['low','Low',g.l.length],['line','Not set',un.length]].map(function(x){
+    return '<span><span class="dot" style="background:var(--'+x[0]+')"></span>'+x[1]+' <b>'+x[2]+'</b></span>'}).join('')+'<span>Total <b>'+items.length+'</b></span>';
+  var n=items.length;$('loaded').textContent=n?n+' title'+(n===1?'':'s')+' on the board':'No titles yet';
+}
+function tsv(){
+  var rows=[['Rank','Priority','Title','File']],r=0;
+  ['h','m','l'].forEach(function(k){items.filter(function(i){return i.p===k}).forEach(function(i){rows.push([++r,ORDER[k],i.title,i.file])})});
+  items.filter(function(i){return !i.p}).forEach(function(i){rows.push(['','Not set',i.title,i.file])});
+  return rows.map(function(r){return r.map(function(c){return String(c).replace(/[\t\r\n]+/g,' ')}).join('\t')}).join('\n')}
+// Split copied task text into heading (first non-empty line) and the rest
+function splitTask(raw){var lines=String(raw).split(/\r?\n/),i=0;while(i<lines.length&&!lines[i].trim())i++;
+  return {title:(lines[i]||'').trim().slice(0,120),text:lines.slice(i+1).join('\n').trim()}}
+$('files').onchange=function(e){
+  var fl=Array.prototype.slice.call(e.target.files),useFirst=$('firstline').checked,pending=fl.length;
+  if(!pending)return;
+  fl.sort(function(a,b){return a.name.localeCompare(b.name,undefined,{numeric:true})});
+  var out=new Array(fl.length);
+  fl.forEach(function(f,idx){var rd=new FileReader();
+    rd.onload=function(){var name=f.name.replace(/\.[^.]+$/,''),title=name,body=String(rd.result).trim();
+      if(useFirst){var sp=splitTask(rd.result);if(sp.title){title=sp.title;body=sp.text}}
+      out[idx]=[title,f.name,body];if(--pending===0){out.forEach(function(o){add(o[0],o[1],o[2])});save();render();e.target.value=''}};
+    rd.onerror=function(){out[idx]=[f.name,f.name,''];if(--pending===0){out.forEach(function(o){add(o[0],o[1],o[2])});save();render()}};
+    rd.readAsText(f,'utf-8')})};
+$('addpaste').onclick=function(){var v=$('paste').value;
+  if($('onetask').checked){var sp=splitTask(v);add(sp.title,'',sp.text)}
+  else v.split(/\r?\n/).forEach(function(l){add(l,'')});
+  $('paste').value='';save();render()};
+$('clear').onclick=function(){if(this.dataset.armed){items=[];this.textContent='Clear board';delete this.dataset.armed;save();render()}else{this.dataset.armed='1';this.textContent='Press again to clear everything'}};
+$('copy').onclick=function(){var t=tsv(),ta=$('csv'),note=$('copied');
+  function fallback(){ta.hidden=false;ta.value=t;ta.focus();ta.select();note.textContent='Select all and copy from the box below.'}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){note.textContent='Copied. Paste it into your sheet.'},fallback)}else fallback()};
+function show(v){document.body.setAttribute('data-v',v);
+  $('t-task').setAttribute('aria-current',v==='task'?'step':'false');$('t-upload').setAttribute('aria-current',v==='upload'?'step':'false');$('t-sort').setAttribute('aria-current',v==='sort'?'step':'false');
+  $('sub').textContent=v==='task'?'Step 1. Turn a sound recording and an image into text, then give it a heading.':v==='upload'?'Step 2. Load saved text files, or paste copied text.':'Step 3. Tap High, Medium or Low on each title.';
+  window.scrollTo(0,0)}
+$('gosort').onclick=function(){show('sort')};$('t-task').onclick=function(){show('task')};$('t-sort').onclick=function(){show('sort')};$('t-upload').onclick=function(){show('upload')};
+Array.prototype.forEach.call(document.querySelectorAll('.goup'),function(b){b.onclick=function(){show('upload')}});
+Array.prototype.forEach.call(document.querySelectorAll('.gotask'),function(b){b.onclick=function(){show('task')}});
+
+/* ---- Task screen ---- */
+var aText=$('tk-atext'),iText=$('tk-itext'),samplePromise=null,downloadsNs=null,imgAbort=null,addedId=null;
+function getSample(){if(!samplePromise)samplePromise=window.claude&&window.claude.use?window.claude.use('sample'):Promise.resolve(null);return samplePromise}
+if(window.claude&&window.claude.use){window.claude.use('downloads').then(function(d){downloadsNs=d;$('tk-save').hidden=!d},function(){})}
+function setStatus(el,html,kind){el.className='status'+(kind?' '+kind:'');el.innerHTML=html}
+function wireDrop(dropId,inputId,onFile){var drop=$(dropId),input=$(inputId);
+  input.addEventListener('change',function(){if(input.files[0])onFile(input.files[0])});
+  ['dragenter','dragover'].forEach(function(e){drop.addEventListener(e,function(ev){ev.preventDefault();drop.classList.add('over')})});
+  ['dragleave','drop'].forEach(function(e){drop.addEventListener(e,function(){drop.classList.remove('over')})});
+  drop.addEventListener('drop',function(ev){ev.preventDefault();var f=ev.dataTransfer.files[0];if(f)onFile(f)})}
+function preview(boxId,node,name){var p=$(boxId),n=document.createElement('div');p.innerHTML='';n.className='fname';n.textContent=name;p.appendChild(node);p.appendChild(n);p.hidden=false}
+
+wireDrop('tk-adrop','tk-afile',function(file){
+  var a=document.createElement('audio');a.controls=true;a.src=URL.createObjectURL(file);preview('tk-aprev',a,file.name);
+  setStatus($('tk-astatus'),'Loaded, add transcript','ok');aText.focus()});
+
+// Convert any browser-readable image to a downscaled PNG for Claude
+function toPng(file,maxSide){return new Promise(function(resolve,reject){var img=new Image();
+  img.onload=function(){var s=Math.min(1,maxSide/Math.max(img.width,img.height)),c=document.createElement('canvas');
+    c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    c.toBlob(function(b){b?resolve(b):reject(new Error('convert'))},'image/png')};
+  img.onerror=function(){reject(new Error('decode'))};img.src=URL.createObjectURL(file)})}
+
+wireDrop('tk-idrop','tk-ifile',function(file){
+  var st=$('tk-istatus'),im=document.createElement('img');im.alt='Uploaded image';im.src=URL.createObjectURL(file);preview('tk-iprev',im,file.name);
+  setStatus(st,'<span class="spinner"></span>Reading text…');
+  Promise.all([toPng(file,2000),getSample()]).then(function(r){
+    var png=r[0],sample=r[1];
+    if(!sample){setStatus(st,"Reading isn't available here. Type the text instead.",'err');return}
+    if(imgAbort)imgAbort.abort();imgAbort=new AbortController();iText.value='';
+    return sample('Transcribe all the text visible in the attached image exactly as written, in its original language and script, preserving line breaks and reading order. Output only the transcribed text, with no commentary. If the image contains no readable text, output a one-sentence plain description of the image instead, starting with "[No text found]".',
+      {images:png,modelTier:'default',signal:imgAbort.signal,onText:function(u){iText.value=u.text;tkRefresh()}})
+      .then(function(res){iText.value=res.text.trim();setStatus(st,'Text read','ok');tkRefresh()});
+  }).catch(function(e){
+    if(e&&e.name==='AbortError')return;
+    var msg={not_granted:'Permission declined. Type the text instead.',rate_limited:'Too many requests. Wait a minute and re-upload.',image_rejected:'This image was rejected. Try a smaller JPG or PNG.',images_unavailable:"Image reading isn't available here. Type the text instead."}[e&&e.code];
+    setStatus(st,msg||(e&&e.message==='decode'?"Can't open this image type. Try JPG or PNG.":"Couldn't read the image. Re-upload to try again."),'err');tkRefresh()})});
+
+function tkRefresh(){var has=aText.value.trim()||iText.value.trim();$('tk-continue').disabled=!has;$('tk-chint').textContent=has?'':'Add text from the sound or the image to continue.'}
+aText.addEventListener('input',function(){tkRefresh();if(aText.value.trim())setStatus($('tk-astatus'),'Transcript added','ok')});
+iText.addEventListener('input',tkRefresh);
+$('tk-continue').onclick=function(){$('tk-ask').hidden=false;$('tk-header').focus();$('tk-ask').scrollIntoView({block:'start'})};
+$('tk-header').addEventListener('input',function(e){$('tk-headbtn').disabled=!e.target.value.trim()});
+$('tk-header').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.value.trim())$('tk-headbtn').click()});
+
+function tkBody(){var parts=[];
+  if(aText.value.trim())parts.push('From the sound',aText.value.trim(),'');
+  if(iText.value.trim())parts.push('From the image',iText.value.trim(),'');
+  return parts.join('\n').trim()}
+function tkPlain(){return $('tk-header').value.trim()+'\n\n'+tkBody()+'\n'}
+$('tk-headbtn').onclick=function(){
+  var doc=$('tk-doc'),h=document.createElement('h2');doc.innerHTML='';h.className='doc';h.textContent=$('tk-header').value.trim();doc.appendChild(h);
+  [['From the sound',aText.value],['From the image',iText.value]].forEach(function(x){if(!x[1].trim())return;
+    var sec=document.createElement('div'),l=document.createElement('h3'),b=document.createElement('p');
+    l.textContent=x[0];b.className='body';b.textContent=x[1].trim();sec.appendChild(l);sec.appendChild(b);doc.appendChild(sec)});
+  addedId=null;$('tk-toboard').textContent='Add to board and set priority →';
+  $('tk-result').hidden=false;$('tk-result').scrollIntoView({block:'start'})};
+
+$('tk-toboard').onclick=function(){
+  var title=$('tk-header').value.trim(),existing=addedId&&items.filter(function(i){return i.id===addedId})[0];
+  if(existing){existing.title=title;existing.text=tkBody()}else{var it=add(title,'',tkBody());addedId=it&&it.id}
+  save();render();this.textContent='On the board. Open priorities →';show('sort')};
+
+function tkToast(t){$('tk-toast').textContent=t;setTimeout(function(){$('tk-toast').textContent=''},2500)}
+$('tk-copy').onclick=function(){var t=tkPlain();
+  function fb(){var r=document.createRange(),s=getSelection();r.selectNodeContents($('tk-doc'));s.removeAllRanges();s.addRange(r);tkToast('Selected. Press Ctrl+C or Cmd+C to copy.')}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){tkToast('Copied')},fb);else fb()};
+$('tk-save').onclick=function(){
+  var name=($('tk-header').value.trim().replace(/[^\w\- ]+/g,'').replace(/\s+/g,'-').slice(0,60)||'task')+'.txt';
+  downloadsNs.save({filename:name,data:new Blob([tkPlain()],{type:'text/plain'})}).then(function(){tkToast('Saved')},function(){tkToast('Not saved')})};
+$('tk-reset').onclick=function(){
+  if(imgAbort)imgAbort.abort();
+  ['tk-afile','tk-ifile','tk-header'].forEach(function(id){$(id).value=''});aText.value=iText.value='';
+  ['tk-aprev','tk-iprev','tk-ask','tk-result'].forEach(function(id){$(id).hidden=true});
+  setStatus($('tk-astatus'),'No file yet');setStatus($('tk-istatus'),'No file yet');
+  $('tk-headbtn').disabled=true;addedId=null;tkRefresh();window.scrollTo(0,0)};
+
+load();render();show(items.length&&items.some(function(i){return !i.p})?'sort':'task');
+</script>

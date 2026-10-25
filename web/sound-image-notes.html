@@ -1,0 +1,316 @@
+<title>Sound &amp; Image Notes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow column, three steps top to bottom — upload, name it, read the result */
+:root {
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --fg: #1b2422;
+  --muted: #5b6965;
+  --line: #d5ddda;
+  --accent: #0f766e;
+  --accent-ink: #ffffff;
+  --accent-soft: #e0f0ed;
+  --danger: #b4232a;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121817; --surface: #1a2220; --fg: #e4ebe8; --muted: #93a39e; --line: #2d3936;
+    --accent: #3cc4b4; --accent-ink: #0b1514; --accent-soft: #173431; --danger: #f17a7f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121817; --surface: #1a2220; --fg: #e4ebe8; --muted: #93a39e; --line: #2d3936;
+  --accent: #3cc4b4; --accent-ink: #0b1514; --accent-soft: #173431; --danger: #f17a7f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+}
+.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; }
+header h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 5vw, 40px); line-height: 1.1; margin: 0 0 8px; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 60ch; }
+.step { display: flex; flex-direction: column; gap: 14px; }
+.step-label { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.step h2 { font-family: var(--font-display); font-weight: 500; font-size: 22px; margin: 0; text-wrap: balance; }
+.uploads { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.panel-head h3 { font-family: var(--font-display); font-weight: 700; font-size: 17px; margin: 0; }
+.status { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.status.ok { color: var(--accent); }
+.status.err { color: var(--danger); }
+.drop { position: relative; border: 1.5px dashed var(--line); border-radius: 8px; padding: 20px 14px; text-align: center; color: var(--muted); cursor: pointer; transition: border-color .15s, background .15s; }
+.drop:hover, .drop.over, .drop:focus-within { border-color: var(--accent); background: var(--accent-soft); }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.drop strong { display: block; color: var(--fg); font-family: var(--font-display); font-weight: 500; }
+.drop small { font-family: var(--font-mono); font-size: 11px; }
+.preview img { display: block; max-height: 180px; margin: 0 auto; border-radius: 6px; }
+.preview audio { width: 100%; }
+.filename { font-family: var(--font-mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+label.field { font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; color: var(--muted); }
+textarea, input[type="text"] {
+  width: 100%; font: inherit; color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+}
+textarea { min-height: 140px; resize: vertical; font-size: 15px; }
+textarea:focus, input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+button {
+  font-family: var(--font-display); font-weight: 500; font-size: 15px;
+  border-radius: 8px; padding: 10px 18px; cursor: pointer;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+}
+button.ghost { background: transparent; color: var(--accent); }
+.board-link {
+  display: inline-flex; align-items: center; min-height: 44px; text-decoration: none;
+  font-family: var(--font-display); font-weight: 500; font-size: 15px;
+  border-radius: 8px; padding: 10px 18px; border: 1px solid var(--accent); color: var(--accent); background: transparent;
+}
+.board-link.primary { background: var(--accent); color: var(--accent-ink); }
+.board-link:hover { background: var(--accent-soft); }
+.board-link.primary:hover { background: var(--accent); filter: brightness(1.08); }
+.board-link:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.ask { background: var(--surface); border: 1px solid var(--accent); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.ask h2 { color: var(--accent); }
+.result { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.result h2.doc-title { font-family: var(--font-display); font-weight: 700; font-size: 28px; margin: 0; text-wrap: balance; }
+.result h3 { font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.result .body { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 65ch; margin: 0; }
+.empty { color: var(--muted); font-style: italic; }
+.toast { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+.spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -1px; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } .drop { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Sound &amp; Image Notes</h1>
+    <p>Upload a sound recording and an image. The text from each is pulled out, then you give it a heading.</p>
+    <div class="row" style="margin-top:14px"><a class="board-link" href="https://claude.ai/artifact/3ZksjztaieiTAuMYL3ej6p" target="_blank" rel="noopener">Open Story Priority Board →</a></div>
+  </header>
+
+  <section class="step" aria-labelledby="s1">
+    <span class="step-label">Step 1 of 3</span>
+    <h2 id="s1">Upload your files</h2>
+    <div class="uploads">
+      <div class="panel">
+        <div class="panel-head"><h3>Sound</h3><span class="status" id="audioStatus">No file yet</span></div>
+        <div class="drop" id="audioDrop">
+          <input type="file" id="audioFile" accept="audio/*" aria-label="Upload a sound file">
+          <strong>Choose or drop a sound file</strong>
+          <small>MP3, M4A, WAV, OGG</small>
+        </div>
+        <div class="preview" id="audioPreview" hidden></div>
+        <label class="field" for="audioText">Sound as text</label>
+        <textarea id="audioText" placeholder="Paste the transcript of the recording here."></textarea>
+        <p class="note">This page can play your recording but cannot transcribe it. Paste a transcript here (for example from your phone's voice typing), or use the local app, which transcribes sound automatically.</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Image</h3><span class="status" id="imageStatus">No file yet</span></div>
+        <div class="drop" id="imageDrop">
+          <input type="file" id="imageFile" accept="image/*" aria-label="Upload an image">
+          <strong>Choose or drop an image</strong>
+          <small>JPG, PNG, WEBP, GIF</small>
+        </div>
+        <div class="preview" id="imagePreview" hidden></div>
+        <label class="field" for="imageText">Image as text</label>
+        <textarea id="imageText" placeholder="The text read from your image appears here. You can edit it."></textarea>
+        <p class="note" id="imageNote">Claude reads the text in the image. You'll be asked once to allow it.</p>
+      </div>
+    </div>
+    <div class="row">
+      <button id="continueBtn" disabled>Continue</button>
+      <span class="status" id="continueHint">Add text from the sound or the image to continue.</span>
+    </div>
+  </section>
+
+  <section class="step ask" id="askStep" aria-labelledby="s2" hidden>
+    <span class="step-label">Step 2 of 3</span>
+    <h2 id="s2">What is this text about?</h2>
+    <p class="note">Your answer becomes the heading for the text.</p>
+    <input type="text" id="headerInput" placeholder="e.g. Team meeting, 14 October — whiteboard notes" autocomplete="off">
+    <div class="row"><button id="headerBtn" disabled>Add heading</button></div>
+  </section>
+
+  <section class="step" id="resultStep" aria-labelledby="s3" hidden>
+    <span class="step-label">Step 3 of 3</span>
+    <div class="result" id="result"></div>
+    <div class="row">
+      <button id="copyBtn">Copy text</button>
+      <button class="ghost" id="saveBtn" hidden>Save as .txt</button>
+      <button class="ghost" id="resetBtn">Start over</button>
+      <span class="toast" id="toast" aria-live="polite"></span>
+    </div>
+    <div class="row">
+      <a class="board-link primary" href="https://claude.ai/artifact/3ZksjztaieiTAuMYL3ej6p" target="_blank" rel="noopener">Set priority on Story Priority Board →</a>
+    </div>
+    <p class="note">Copy the text or save it as .txt first. On the board, go to Load text files and paste it (tick "This is one task's copied text") or choose the saved file.</p>
+  </section>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const audioText = $("audioText"), imageText = $("imageText");
+let samplePromise = null, downloadsNs = null;
+
+function getSample() {
+  if (!samplePromise) samplePromise = window.claude?.use ? window.claude.use("sample") : Promise.resolve(null);
+  return samplePromise;
+}
+(async () => {
+  try { downloadsNs = await window.claude?.use?.("downloads"); } catch { downloadsNs = null; }
+  $("saveBtn").hidden = !downloadsNs;
+})();
+
+function setStatus(el, text, kind) { el.className = "status" + (kind ? " " + kind : ""); el.innerHTML = text; }
+
+function wireDrop(dropId, inputId, onFile) {
+  const drop = $(dropId), input = $(inputId);
+  input.addEventListener("change", () => input.files[0] && onFile(input.files[0]));
+  ["dragenter", "dragover"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(e => drop.addEventListener(e, () => drop.classList.remove("over")));
+  drop.addEventListener("drop", ev => { ev.preventDefault(); const f = ev.dataTransfer.files[0]; if (f) onFile(f); });
+}
+
+// Sound: preview only; text is pasted by the user
+wireDrop("audioDrop", "audioFile", file => {
+  const p = $("audioPreview");
+  p.innerHTML = "";
+  const a = document.createElement("audio"); a.controls = true; a.src = URL.createObjectURL(file);
+  const n = document.createElement("div"); n.className = "filename"; n.textContent = file.name;
+  p.append(a, n); p.hidden = false;
+  setStatus($("audioStatus"), "Loaded, add transcript", "ok");
+  audioText.focus();
+});
+
+// Image: convert to PNG (downscaled) and ask Claude to read it
+function toPng(file, maxSide = 2000) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => b ? resolve(b) : reject(new Error("convert")), "image/png");
+    };
+    img.onerror = () => reject(new Error("decode"));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+let imageAbort = null;
+wireDrop("imageDrop", "imageFile", async file => {
+  const p = $("imagePreview"), st = $("imageStatus");
+  p.innerHTML = "";
+  const im = document.createElement("img"); im.alt = "Uploaded image"; im.src = URL.createObjectURL(file);
+  const n = document.createElement("div"); n.className = "filename"; n.textContent = file.name;
+  p.append(im, n); p.hidden = false;
+
+  setStatus(st, '<span class="spinner"></span>Reading text…');
+  let png;
+  try { png = await toPng(file); }
+  catch { setStatus(st, "Can't open this image type. Try JPG or PNG.", "err"); return; }
+
+  const sample = await getSample();
+  if (!sample) { setStatus(st, "Reading isn't available here. Type the text instead.", "err"); return; }
+
+  imageAbort?.abort(); imageAbort = new AbortController();
+  imageText.value = "";
+  try {
+    const res = await sample(
+      "Transcribe all the text visible in the attached image exactly as written, preserving line breaks and reading order. " +
+      "Output only the transcribed text, with no commentary. If the image contains no readable text, output a one-sentence plain description of the image instead, starting with \"[No text found]\".",
+      { images: png, modelTier: "default", signal: imageAbort.signal, onText: ({ text }) => { imageText.value = text; refresh(); } }
+    );
+    imageText.value = res.text.trim();
+    setStatus(st, "Text read", "ok");
+  } catch (e) {
+    const msg = { not_granted: "Permission declined. Type the text instead.", rate_limited: "Too many requests. Wait a minute and re-upload.", image_rejected: "This image was rejected. Try a smaller JPG or PNG.", images_unavailable: "Image reading isn't available here. Type the text instead." }[e?.code];
+    if (e?.name === "AbortError") return;
+    setStatus(st, msg || "Couldn't read the image. Re-upload to try again.", "err");
+  }
+  refresh();
+});
+
+function refresh() {
+  const has = audioText.value.trim() || imageText.value.trim();
+  $("continueBtn").disabled = !has;
+  $("continueHint").textContent = has ? "" : "Add text from the sound or the image to continue.";
+}
+audioText.addEventListener("input", () => { refresh(); if (audioText.value.trim()) setStatus($("audioStatus"), "Transcript added", "ok"); });
+imageText.addEventListener("input", refresh);
+
+$("continueBtn").addEventListener("click", () => {
+  $("askStep").hidden = false;
+  $("headerInput").focus();
+  $("askStep").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+});
+$("headerInput").addEventListener("input", e => $("headerBtn").disabled = !e.target.value.trim());
+$("headerInput").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.value.trim()) $("headerBtn").click(); });
+
+function plainText() {
+  const parts = [$("headerInput").value.trim(), ""];
+  if (audioText.value.trim()) parts.push("From the sound", audioText.value.trim(), "");
+  if (imageText.value.trim()) parts.push("From the image", imageText.value.trim(), "");
+  return parts.join("\n").trim() + "\n";
+}
+
+$("headerBtn").addEventListener("click", () => {
+  const r = $("result"); r.innerHTML = "";
+  const h = document.createElement("h2"); h.className = "doc-title"; h.textContent = $("headerInput").value.trim(); r.append(h);
+  [["From the sound", audioText.value], ["From the image", imageText.value]].forEach(([label, txt]) => {
+    if (!txt.trim()) return;
+    const sec = document.createElement("div");
+    const l = document.createElement("h3"); l.textContent = label;
+    const b = document.createElement("p"); b.className = "body"; b.textContent = txt.trim();
+    sec.append(l, b); r.append(sec);
+  });
+  $("resultStep").hidden = false;
+  $("resultStep").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+function toast(t) { $("toast").textContent = t; setTimeout(() => $("toast").textContent = "", 2500); }
+
+$("copyBtn").addEventListener("click", () => {
+  const text = plainText();
+  navigator.clipboard.writeText(text).then(() => toast("Copied"), () => {
+    const range = document.createRange(); range.selectNodeContents($("result"));
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    toast("Selected. Press Ctrl+C or Cmd+C to copy.");
+  });
+});
+
+$("saveBtn").addEventListener("click", async () => {
+  const name = ($("headerInput").value.trim().replace(/[^\w\- ]+/g, "").replace(/\s+/g, "-").slice(0, 60) || "notes") + ".txt";
+  try { await downloadsNs.save({ filename: name, data: new Blob([plainText()], { type: "text/plain" }) }); toast("Saved"); }
+  catch { toast("Not saved"); }
+});
+
+$("resetBtn").addEventListener("click", () => {
+  imageAbort?.abort();
+  ["audioFile", "imageFile", "headerInput"].forEach(id => $(id).value = "");
+  audioText.value = imageText.value = "";
+  ["audioPreview", "imagePreview", "askStep", "resultStep"].forEach(id => $(id).hidden = true);
+  setStatus($("audioStatus"), "No file yet"); setStatus($("imageStatus"), "No file yet");
+  $("headerBtn").disabled = true; refresh();
+  scrollTo({ top: 0 });
+});
+</script>
